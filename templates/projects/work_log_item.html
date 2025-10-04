@@ -1,0 +1,19 @@
+<div class="card mb-3 work-log-item">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h6 class="card-subtitle mb-2 text-muted">{{ work_log.date|date:"F j, Y" }}</h6>
+                <p class="card-text">{{ work_log.description|linebreaks }}</p>
+            </div>
+            <div class="text-end">
+                <span class="badge bg-info">{{ work_log.hours_worked }} hours</span>
+            </div>
+        </div>
+        <div class="text-muted small mt-2">
+            Logged by {{ work_log.user.get_full_name|default:work_log.user.username }}
+            {% if work_log.created_at != work_log.updated_at %}
+            <br>Updated {{ work_log.updated_at|timesince }} ago
+            {% endif %}
+        </div>
+    </div>
+</div>

@@ -1,0 +1,188 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ project.name }} | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow-sm border-0">
+
+            <!-- Header -->
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h2 class="h4 mb-0"><i class="fas fa-project-diagram me-2"></i>{{ project.name }}</h2>
+                {% if user == project.user and is_edit_mode %}
+                    <div class="d-flex gap-2">
+                        <a href="{% url 'projects:update' project.pk %}" class="btn btn-light btn-sm">
+                            <i class="fas fa-edit me-1"></i>Edit
+                        </a>
+                        {% if not project.is_submitted %}
+                            <form method="post" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-warning btn-sm"
+                                        onclick="return confirm('Are you sure you want to submit this project? It cannot be edited after submission.')">
+                                    <i class="fas fa-check me-1"></i>Submit
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Body -->
+            <div class="card-body">
+                <div class="row mb-4">
+                    <!-- Left Column: Project Details -->
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h5 class="fw-bold text-secondary"><i class="fas fa-info-circle me-1"></i>Project Details</h5>
+                        <table class="table table-borderless mb-0">
+                            <tr>
+                                <th class="text-muted">Category:</th>
+                                <td>{{ project.category }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Company:</th>
+                                <td>{{ project.company }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Location:</th>
+                                <td>{{ project.location }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Status:</th>
+                                <td>
+                                    {% if project.is_submitted %}
+                                        <span class="badge bg-success">Completed</span>
+                                    {% elif project.work_logs.exists %}
+                                        <span class="badge bg-primary">In Progress</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pending</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <!-- Right Column: Timeline -->
+                    <div class="col-md-6">
+                        <h5 class="fw-bold text-secondary"><i class="fas fa-clock me-1"></i>Timeline</h5>
+                        <table class="table table-borderless mb-0">
+                            <tr>
+                                <th class="text-muted">Tender Award Date:</th>
+                                <td>{{ project.tender_award_date|default:"Not set" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Tentative Completion Date:</th>
+                                <td>{{ project.completion_date|default:"Not set" }}</td>
+                            </tr>
+                            <tr>
+                                <th class="text-muted">Project Completion Date:</th>
+                                <td>
+                                    {% if project.is_submitted %}
+                                        {{ project.submission_date }}
+                                    {% else %}
+                                        Not submitted
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                    <h5 class="fw-bold text-secondary"><i class="fas fa-tasks me-1"></i>Progress</h5>
+                    <div class="progress" style="height: 25px;">
+                        {% if project.is_submitted %}
+                            <div class="progress-bar bg-success" role="progressbar" style="width: 100%;" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100">Completed</div>
+                        {% elif project.work_logs.exists %}
+                            <div class="progress-bar bg-primary" role="progressbar" style="width: 50%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100">In Progress</div>
+                        {% else %}
+                            <div class="progress-bar bg-secondary" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Pending</div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <h5 class="fw-bold text-secondary"><i class="fas fa-align-left me-1"></i>Description</h5>
+                    <p class="card-text">{{ project.description|linebreaks }}</p>
+                </div>
+
+                <!-- Created / Updated -->
+                <div class="row mb-4">
+                    <div class="col-md-6 mb-3 mb-md-0">
+                        <h5 class="fw-bold text-secondary"><i class="fas fa-user me-1"></i>Created By</h5>
+                        <p>{{ project.user.get_full_name|default:project.user.username }}</p>
+                    </div>
+                </div>
+
+                <!-- Work Logs Section -->
+                <div class="card shadow-sm mb-3">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="fas fa-clipboard-list me-1"></i>Daily Work Logs</h5>
+                        {% if is_edit_mode and user == project.user %}
+                            <button class="btn btn-primary btn-sm" type="button" data-bs-toggle="collapse" data-bs-target="#newWorkLogForm">
+                                <i class="fas fa-plus me-1"></i> Add Work Log
+                            </button>
+                        {% endif %}
+                    </div>
+                    <div class="card-body">
+                        <div class="collapse mb-4" id="newWorkLogForm">
+                            <div class="card shadow-sm border-0">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3">Add New Work Log</h5>
+                                    {% if work_log_form %}
+                                        <form method="post" action="{% url 'projects:add_work_log' project.pk %}" id="work-log-form">
+                                            {% csrf_token %}
+                                            <div class="mb-3">
+                                                <label for="id_date" class="form-label">Work Date</label>
+                                                <input type="date" name="date" class="form-control" id="id_date" required value="{{ work_log_form.initial.date|date:'Y-m-d' }}">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="id_description" class="form-label">Work Description</label>
+                                                <textarea name="description" class="form-control" id="id_description" rows="4" required></textarea>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="id_hours_worked" class="form-label">Hours Worked</label>
+                                                <input type="number" name="hours_worked" class="form-control" id="id_hours_worked" step="0.5" min="0.5" max="24" value="8.0" required>
+                                            </div>
+                                            <div class="mt-3 d-flex gap-2">
+                                                <button type="submit" class="btn btn-primary"><i class="fas fa-save me-1"></i>Save</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-toggle="collapse" data-bs-target="#newWorkLogForm">
+                                                    <i class="fas fa-times me-1"></i>Cancel
+                                                </button>
+                                            </div>
+                                        </form>
+                                    {% else %}
+                                        <div class="alert alert-warning">Form not available. Please refresh the page.</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="workLogsList">
+                            {% if work_logs %}
+                                {% for work_log in work_logs %}
+                                    {% include 'projects/work_log_item.html' with work_log=work_log %}
+                                {% endfor %}
+                            {% else %}
+                                <div class="alert alert-info">No work logs have been added yet.</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="card-footer d-flex justify-content-between">
+                <a href="{% url 'projects:list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Projects
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+

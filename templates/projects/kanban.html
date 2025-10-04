@@ -1,0 +1,176 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block extra_css %}
+<style>
+    .kanban-board {
+        display: flex;
+        gap: 1rem;
+        overflow-x: auto;
+        padding: 1rem;
+    }
+
+    .kanban-column {
+        flex: 0 0 300px;
+        background: var(--bs-gray-100);
+        border-radius: 0.5rem;
+        padding: 1rem;
+    }
+
+    [data-bs-theme="dark"] .kanban-column {
+        background: var(--bs-gray-800);
+    }
+
+    .kanban-card {
+        cursor: move;
+        margin-bottom: 0.5rem;
+    }
+
+    .kanban-column-header {
+        margin-bottom: 1rem;
+        padding: 0.5rem;
+        border-bottom: 2px solid var(--bs-primary);
+    }
+
+    .project-card {
+        transition: transform 0.2s;
+    }
+
+    .project-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .dragging {
+        opacity: 0.5;
+    }
+
+    @media (max-width: 768px) {
+        .kanban-board {
+            flex-direction: column;
+        }
+        
+        .kanban-column {
+            flex: 1;
+            margin-bottom: 1rem;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Project Kanban Board</h2>
+        {% if not user.is_director %}
+        <a href="{% url 'projects:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> New Project
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="kanban-board">
+        <!-- Not Started Column -->
+        <div class="kanban-column" data-status="not_started">
+            <div class="kanban-column-header">
+                <h5 class="mb-0"><i class="fas fa-clock text-warning"></i> Not Started</h5>
+            </div>
+            {% for project in projects %}
+                {% if not project.is_completed and not project.work_logs.exists %}
+                    {% include 'projects/kanban_card.html' with project=project %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- In Progress Column -->
+        <div class="kanban-column" data-status="in_progress">
+            <div class="kanban-column-header">
+                <h5 class="mb-0"><i class="fas fa-sync text-primary"></i> In Progress</h5>
+            </div>
+            {% for project in projects %}
+                {% if not project.is_completed and project.work_logs.exists %}
+                    {% include 'projects/kanban_card.html' with project=project %}
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Completed Column -->
+        <div class="kanban-column" data-status="completed">
+            <div class="kanban-column-header">
+                <h5 class="mb-0"><i class="fas fa-check text-success"></i> Completed</h5>
+            </div>
+            {% for project in projects %}
+                {% if project.is_completed %}
+                    {% include 'projects/kanban_card.html' with project=project %}
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.kanban-card');
+    const columns = document.querySelectorAll('.kanban-column');
+
+    cards.forEach(card => {
+        card.addEventListener('dragstart', dragStart);
+        card.addEventListener('dragend', dragEnd);
+    });
+
+    columns.forEach(column => {
+        column.addEventListener('dragover', dragOver);
+        column.addEventListener('drop', drop);
+    });
+
+    function dragStart(e) {
+        e.target.classList.add('dragging');
+    }
+
+    function dragEnd(e) {
+        e.target.classList.remove('dragging');
+    }
+
+    function dragOver(e) {
+        e.preventDefault();
+    }
+
+    function drop(e) {
+        e.preventDefault();
+        const card = document.querySelector('.dragging');
+        const column = e.target.closest('.kanban-column');
+        
+        if (card && column) {
+            const projectId = card.getAttribute('data-project-id');
+            const newStatus = column.getAttribute('data-status');
+            
+            // Update project status via AJAX
+            updateProjectStatus(projectId, newStatus).then(() => {
+                column.appendChild(card);
+            });
+        }
+    }
+
+    async function updateProjectStatus(projectId, status) {
+        try {
+            const response = await fetch(`/projects/${projectId}/update-status/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                body: JSON.stringify({ status: status })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Error updating project status:', error);
+            alert('Failed to update project status. Please try again.');
+        }
+    }
+});
+</script>
+{% endblock %}

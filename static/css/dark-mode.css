@@ -1,0 +1,65 @@
+/* Dark mode styles */
+[data-bs-theme="dark"] {
+    --bs-body-bg: #212529;
+    --bs-body-color: #f8f9fa;
+    --bs-card-bg: #343a40;
+    --bs-card-border-color: #495057;
+}
+
+[data-bs-theme="dark"] .navbar {
+    background-color: #343a40 !important;
+}
+
+[data-bs-theme="dark"] .card {
+    background-color: #343a40;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-color: #f8f9fa;
+    --bs-table-bg: #343a40;
+    --bs-table-border-color: #495057;
+}
+
+[data-bs-theme="dark"] .alert-info {
+    background-color: #1c4b6c;
+    border-color: #1a4d6e;
+    color: #cfe2ff;
+}
+
+[data-bs-theme="dark"] .btn-light {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .form-control {
+    background-color: #495057;
+    border-color: #6c757d;
+    color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .form-control:focus {
+    background-color: #495057;
+    border-color: #0d6efd;
+    color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .modal-content {
+    background-color: #343a40;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .dropdown-menu {
+    background-color: #343a40;
+    border-color: #495057;
+}
+
+[data-bs-theme="dark"] .dropdown-item {
+    color: #f8f9fa;
+}
+
+[data-bs-theme="dark"] .dropdown-item:hover {
+    background-color: #495057;
+    color: #f8f9fa;
+}

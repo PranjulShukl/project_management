@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block extra_css %}
+<style>
+  .chart-container {
+    position: relative;
+    width: 100%;          /* responsive full width */
+    max-width: 600px;     /* don’t grow too wide on desktop */
+    height: 300px;        /* fixed height */
+    margin: 20px auto;    /* center & spacing */
+  }
+
+  .chart-container canvas {
+    width: 100% !important;
+    height: 100% !important; /* fill container */
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+  <h2>📊 Project Dashboard – {{ project.name }}</h2>
+  <p><b>Company:</b> {{ project.company }} | <b>Location:</b> {{ project.location }}</p>
+  <hr>
+
+  <!-- Summary Cards -->
+  <div class="row text-center">
+    <div class="col-md-3">
+      <div class="card bg-light shadow-sm">
+        <div class="card-body">
+          <h5>Total Hours</h5>
+          <h3>{{ total_hours|default:0 }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-light shadow-sm">
+        <div class="card-body">
+          <h5>Avg Daily Hours</h5>
+          <h3>{{ avg_daily_hours|default:0 }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-light shadow-sm">
+        <div class="card-body">
+          <h5>Active Days</h5>
+          <h3>{{ active_days|default:0 }}</h3>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-3">
+      <div class="card bg-light shadow-sm">
+        <div class="card-body">
+          <h5>Days Left</h5>
+          <h3>{{ days_left|default:0 }}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Daily Trend -->
+  <h4>📈 Daily Effort Trend</h4>
+  <div class="chart-container">
+    <canvas id="trendChart"></canvas>
+  </div>
+
+  <hr>
+
+  <!-- Cumulative -->
+  <h4>📊 Cumulative Hours</h4>
+  <div class="chart-container">
+    <canvas id="cumulativeChart"></canvas>
+  </div>
+</div>
+
+<!-- Pass data safely to JS -->
+{{ daily_trend|json_script:"daily-trend-data" }}
+{{ cumulative|json_script:"cumulative-data" }}
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const dailyTrendData = JSON.parse(document.getElementById('daily-trend-data').textContent);
+  const cumulativeData = JSON.parse(document.getElementById('cumulative-data').textContent);
+
+  // Daily trend
+  const trendLabels = dailyTrendData.map(d => d.date || '');
+  const trendValues = dailyTrendData.map(d => parseFloat(d.total) || 0);
+
+  const trendChart = new Chart(document.getElementById('trendChart'), {
+    type: 'bar',
+    data: {
+      labels: trendLabels,
+      datasets: [{
+        label: 'Hours',
+        data: trendValues,
+        backgroundColor: '#007bff'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+
+  // Cumulative hours
+  const cumulativeLabels = cumulativeData.map(c => c.date || '');
+  const cumulativeValues = cumulativeData.map(c => parseFloat(c.cumulative) || 0);
+
+  const cumulativeChart = new Chart(document.getElementById('cumulativeChart'), {
+    type: 'line',
+    data: {
+      labels: cumulativeLabels,
+      datasets: [{
+        label: 'Cumulative Hours',
+        data: cumulativeValues,
+        fill: true,
+        borderColor: '#28a745',
+        backgroundColor: 'rgba(40,167,69,0.2)'
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
+</script>
+{% endblock %}

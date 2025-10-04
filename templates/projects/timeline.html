@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>📅 Project Timeline</h2>
+
+    <div class="timeline-container">
+        {% for project in projects %}
+        <div class="card mb-3 shadow-sm">
+            <div class="card-body">
+                <h5>{{ project.name }}</h5>
+                <p><b>Company:</b> {{ project.company }} | <b>Location:</b> {{ project.location }}</p>
+                <p>Total Hours: {{ project.total_hours }} | Active Days: {{ project.active_days }} | Days Left: {{ project.days_left }}</p>
+                <p>DEBUG: Project ID = {{ project.id }}</p>
+                    <a href="{% url 'projects:project_dashboard' project_id=project.id %}">Dashboard</a>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

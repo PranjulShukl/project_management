@@ -1,0 +1,20 @@
+<!-- templates/projects/client_feedback.html -->
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Client Feedback for {{ project.name }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <label class="form-label">Feedback</label>
+            {{ form.client_feedback }}
+        </div>
+        <div class="form-check mb-3">
+            {{ form.client_confirmed_completed }}
+            <label class="form-check-label">Mark Project as Completed</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Submit Feedback</button>
+    </form>
+</div>
+{% endblock %}

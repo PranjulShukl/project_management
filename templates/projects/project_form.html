@@ -1,0 +1,189 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}Project Work Logs{% else %}New Project{% endif %} | {{ block.super }}
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12">
+        <div class="card shadow">
+
+            <!-- Project Header -->
+            <div class="card-header bg-primary text-white">
+                <h2 class="h4 mb-0">
+                    {% if form.instance.pk %}Project Work Logs{% else %}Create New Project{% endif %}
+                </h2>
+            </div>
+
+            <div class="card-body">
+                {% if not form.instance.pk %}
+                    <!-- Show Project Form only if it's a new project -->
+                    <form method="post" id="project-form">
+                        {% csrf_token %}
+
+                        {% if form.errors %}
+                            <div class="alert alert-danger">
+                                Please correct the errors below.
+                            </div>
+                        {% endif %}
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                {{ form.name|as_crispy_field }}
+                                {{ form.category|as_crispy_field }}
+                                {{ form.company|as_crispy_field }}
+                                {{ form.location|as_crispy_field }}
+                            </div>
+                            <div class="col-md-6">
+                                {{ form.tender_award_date|as_crispy_field }}
+                                {{ form.completion_date|as_crispy_field }}
+                                {{ form.description|as_crispy_field }}
+                            </div>
+                        </div>
+                    </form>
+                {% else %}
+                    <!-- Only Work Logs for existing project -->
+                    <div class="row mt-2">
+                        <div class="col-12">
+                            <div class="card">
+                                <!-- Work Log Header -->
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0">Daily Work Logs</h5>
+                                    <button class="btn btn-primary btn-sm" type="button" 
+                                            data-bs-toggle="collapse" data-bs-target="#newWorkLogForm"
+                                            aria-expanded="false" aria-controls="newWorkLogForm">
+                                        <i class="fas fa-plus"></i> Add Work Log
+                                    </button>
+                                </div>
+
+                                <div class="card-body">
+                                    <!-- New Work Log Form -->
+                                    <div class="collapse mb-4" id="newWorkLogForm">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h5 class="card-title mb-3">Add New Work Log</h5>
+
+                                                {% if work_log_form %}
+                                                <form method="post" action="{% url 'projects:add_work_log' project.pk %}" id="work-log-form">
+                                                    {% csrf_token %}
+
+                                                    <div class="mb-3">
+                                                        <label for="id_date" class="form-label">Work Date</label>
+                                                        <input type="date" name="date" id="id_date" class="form-control" required
+                                                               value="{{ work_log_form.initial.date|date:'Y-m-d' }}">
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label for="id_description" class="form-label">Work Description</label>
+                                                        <textarea name="description" id="id_description" class="form-control" rows="4" required
+                                                                  placeholder="Describe the work done today"></textarea>
+                                                    </div>
+
+                                                    <div class="mb-3">
+                                                        <label for="id_hours_worked" class="form-label">Hours Worked</label>
+                                                        <input type="number" name="hours_worked" id="id_hours_worked" class="form-control"
+                                                               step="0.5" min="0.5" max="24" value="8.0" required>
+                                                    </div>
+
+                                                    <div class="mt-3">
+                                                        <button type="submit" class="btn btn-primary">
+                                                            <i class="fas fa-save"></i> Save Work Log
+                                                        </button>
+                                                        <button type="button" class="btn btn-secondary"
+                                                                data-bs-toggle="collapse" data-bs-target="#newWorkLogForm">
+                                                            <i class="fas fa-times"></i> Cancel
+                                                        </button>
+                                                    </div>
+                                                </form>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Existing Work Logs -->
+                                    <div id="workLogsList">
+                                        {% if work_logs %}
+                                            {% for work_log in work_logs %}
+                                                {% include 'projects/work_log_item.html' with work_log=work_log is_edit_mode=True %}
+                                            {% endfor %}
+                                        {% else %}
+                                            <div class="alert alert-info">
+                                                No work logs have been added to this project yet.
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Footer -->
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'projects:list' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Back to Projects
+                    </a>
+                    {% if not form.instance.pk %}
+                        <button type="submit" form="project-form" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Project
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('work-log-form');
+    const workLogsList = document.getElementById('workLogsList');
+    const workLogFormCollapse = new bootstrap.Collapse(document.getElementById('newWorkLogForm'), { toggle: false });
+
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // Stop full-page submit
+
+            const formData = new FormData(form);
+
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest', // Tell Django it's AJAX
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    workLogsList.insertAdjacentHTML('afterbegin', data.html);
+                    form.reset();
+                    workLogFormCollapse.hide();
+
+                    // Optional: show success alert
+                    const alert = document.createElement('div');
+                    alert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                    alert.innerHTML = `Work log added successfully!<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+                    workLogsList.parentNode.insertBefore(alert, workLogsList);
+                } else if (data.status === 'error') {
+                    console.log('Form errors:', data.error);
+                    // Optionally: display errors on the form
+                }
+            })
+            .catch(err => {
+                console.error(err);
+            });
+        });
+    }
+});
+</script>
+{% endblock %}
