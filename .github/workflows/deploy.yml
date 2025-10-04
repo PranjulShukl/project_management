@@ -35,7 +35,7 @@ jobs:
             # Collect static files
             python manage.py collectstatic --noinput
             # Restart Gunicorn or your WSGI service
-            sudo systemctl restart gunicorn
+            sudo systemctl restart gunicorn_second
             # Optional: restart nginx if needed
             # sudo systemctl restart nginx
           ENDSSH
